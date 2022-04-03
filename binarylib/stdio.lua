@@ -1,5 +1,4 @@
 local ffi = require 'ffi'
-local class = require 'libs.class'
 local stdlib = require 'binarylib.stdlib'
 
 ffi.cdef[[
@@ -29,11 +28,9 @@ int fclose(FILE *stream);
 
 local uint8_t_size = ffi.sizeof('uint8_t')
 
-local file = class('STDIOFILE')
-
-function file:init(f)
-      self.f = f
-end
+local file = {}
+file.__index = file
+file.class_name = 'STDIOFILE'
 
 function file:read()
       local size = self:size()
@@ -83,7 +80,7 @@ return {
             mode = mode or 'r'
             local f = ffi.C.fopen(filename, mode)
             if f then
-                  return file(f)
+                  return setmetatable({ f = f }, file)
             end
       end
 }

@@ -1,13 +1,17 @@
 local ffi = require 'ffi'
 local stdlib = require 'binarylib.stdlib'
 
-local class = require 'libs.class'
+local m_stream = {}
+m_stream.__index = m_stream
 
-local m_stream = class('M_Stream')
-function m_stream:init(data, size)
+local f_stream = {}
+f_stream.__index = f_stream
+
+local function m_stream_new(data, size)
+      local t = setmetatable({}, m_stream)
       local c_str
       if type(data) == 'cdata' and size then
-            self.size = size
+            t.size = size
             c_str = ffi.cast("uint8_t*", data)
       else
             local size = #data
@@ -22,9 +26,10 @@ function m_stream:init(data, size)
                         c_str[i - 1] = v
                   end
             end
-            self.size = size
+            t.size = size
       end
-      self.buffer = ffi.gc(c_str, stdlib.free)
+      t.buffer = ffi.gc(c_str, stdlib.free)
+      return t
 end
 
 function m_stream:check_capacity(position, size)
@@ -61,12 +66,14 @@ function m_stream:write_data(position, size, ptr)
       return ptr
 end
 
-local f_stream = class('F_Stream')
-function f_stream:init(file)
-      self.file = file
-      self.size = self.file:size()
 
-      self.buffer = ffi.new('uint8_t[?]', 8)
+local function f_stream_new(file)
+      local t = setmetatable({}, f_stream)
+      t.file = file
+      t.size = t.file:size()
+
+      t.buffer = ffi.new('uint8_t[?]', 8)
+      return t
 end
 
 function f_stream:pack(position, size, value, t)
@@ -95,6 +102,6 @@ function f_stream:write_data(position, size, ptr)
 end
 
 return {
-      m_stream = m_stream,
-      f_stream = f_stream,
+      m_stream = m_stream_new,
+      f_stream = f_stream_new,
 }
